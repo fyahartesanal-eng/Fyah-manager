@@ -20,9 +20,18 @@ jobs:
           distribution: temurin
           java-version: '17'
 
-      - name: Extrair projeto
+      
+      - name: Localizar e extrair projeto
         run: |
-          unzip -o FYAH_Control_Android_CORRIGIDO.zip -d .
+          ZIP="$(find . -type f -iname '*.zip' -print -quit)"
+          if [ -z "$ZIP" ]; then
+            echo "Arquivo ZIP não encontrado"
+            find . -maxdepth 3 -type f
+            exit 1
+          fi
+          echo "ZIP encontrado: $ZIP"
+          unzip -o "$ZIP" -d .
+          
 
       - name: Configurar Gradle
         uses: gradle/actions/setup-gradle@v4
