@@ -1,0 +1,148 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="theme-color" content="#0a111d">
+<title>FYAH Control</title>
+<style>
+:root{--bg:#0a111d;--panel:#111c2b;--panel2:#172438;--gold:#c9a45c;--text:#f5f1e8;--muted:#9aa8b8;--line:#28374b;--green:#75c69b;--red:#e58b83}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px system-ui,-apple-system,Segoe UI,sans-serif;padding-bottom:82px}
+header{padding:22px 18px 16px;background:linear-gradient(135deg,#111d2d,#0a111d);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:3}
+.brand{color:var(--gold);letter-spacing:4px;font-size:12px;font-weight:800}.sub{color:var(--muted);font-size:12px;margin-top:4px}
+main{padding:16px;max-width:760px;margin:auto}.section-title{font-size:19px;margin:8px 0 14px;font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat,.card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.stat small{color:var(--muted);display:block}.stat strong{display:block;font-size:22px;margin-top:6px;color:var(--gold)}
+.tabs{position:fixed;bottom:0;left:0;right:0;display:flex;justify-content:space-around;background:#0e1826;border-top:1px solid var(--line);padding:9px 4px calc(9px + env(safe-area-inset-bottom));z-index:5}
+.tabs button{background:none;border:0;color:var(--muted);font-size:11px;padding:5px;min-width:55px}.tabs button.active{color:var(--gold)}
+button,.btn{cursor:pointer;border:1px solid var(--gold);border-radius:10px;padding:10px 13px;background:var(--gold);color:#111827;font-weight:700}
+button.secondary{background:transparent;color:var(--gold)}button.danger{border-color:#9c514d;color:#ffc4bd;background:transparent}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+input,select,textarea{width:100%;background:#0c1624;color:var(--text);border:1px solid var(--line);border-radius:9px;padding:11px;margin:5px 0 11px;font:inherit}
+label{color:var(--muted);font-size:12px}form{background:var(--panel);padding:14px;border:1px solid var(--line);border-radius:14px;margin-bottom:14px}
+.row{display:flex;justify-content:space-between;gap:12px;align-items:center}.muted{color:var(--muted);font-size:12px}.price{color:var(--gold);font-weight:700}
+.pill{font-size:11px;border:1px solid var(--line);padding:4px 7px;border-radius:20px;color:var(--muted)}
+.empty{padding:28px 10px;text-align:center;color:var(--muted)}
+.hidden{display:none!important}
+h3{margin:0 0 5px;font-size:16px}.card p{margin:5px 0;color:var(--muted);font-size:13px}
+hr{border:0;border-top:1px solid var(--line);margin:12px 0}
+@media(min-width:600px){.grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+</style>
+</head>
+<body>
+<header><div class="brand">FYAH</div><div style="font-size:21px;font-weight:750">Control</div><div class="sub">Gestão de encomendas • produção • financeiro</div></header>
+<main>
+<section id="dashboard">
+ <div class="section-title">Visão geral</div>
+ <div class="grid">
+  <div class="stat"><small>Encomendas abertas</small><strong id="sOpen">0</strong></div>
+  <div class="stat"><small>A receber</small><strong id="sReceber">R$ 0,00</strong></div>
+  <div class="stat"><small>Faturamento recebido</small><strong id="sRevenue">R$ 0,00</strong></div>
+  <div class="stat"><small>Resultado estimado</small><strong id="sProfit">R$ 0,00</strong></div>
+ </div>
+ <div class="section-title">Próximas ações</div><div id="dashList"></div>
+ <div class="actions"><button onclick="show('orders')">＋ Nova encomenda</button><button class="secondary" onclick="show('finance')">＋ Lançar despesa</button></div>
+</section>
+<section id="orders" class="hidden">
+ <div class="row"><div class="section-title">Encomendas</div><button onclick="toggleForm('orderForm')">＋ Nova</button></div>
+ <form id="orderForm" class="hidden" onsubmit="saveOrder(event)">
+  <label>Cliente</label><input id="oCustomer" required placeholder="Nome do cliente">
+  <label>Telefone / contato</label><input id="oPhone" placeholder="(00) 00000-0000">
+  <label>Produto</label><select id="oProduct"></select>
+  <label>Quantidade</label><input id="oQty" type="number" min="1" value="1" required>
+  <label>Preço unitário (R$)</label><input id="oPrice" type="number" min="0" step=".01" required>
+  <label>Data de entrega</label><input id="oDate" type="date">
+  <label>Pagamento</label><select id="oPayment"><option>Pendente</option><option>Parcial</option><option>Pago</option></select>
+  <label>Produção</label><select id="oProduction"><option>A produzir</option><option>Em produção</option><option>Pronto</option></select>
+  <label>Entrega</label><select id="oDelivery"><option>Pendente</option><option>Entregue</option></select>
+  <label>Observações</label><textarea id="oNotes" rows="2"></textarea>
+  <div class="actions"><button type="submit">Salvar encomenda</button><button type="button" class="secondary" onclick="toggleForm('orderForm')">Cancelar</button></div>
+ </form>
+ <div id="orderList"></div>
+</section>
+<section id="production" class="hidden"><div class="section-title">Fila de produção</div><div id="productionList"></div></section>
+<section id="finance" class="hidden">
+ <div class="section-title">Financeiro</div>
+ <div class="grid">
+  <div class="stat"><small>Receita recebida</small><strong id="fRevenue">R$ 0,00</strong></div>
+  <div class="stat"><small>Despesas lançadas</small><strong id="fExpenses">R$ 0,00</strong></div>
+  <div class="stat"><small>Resultado</small><strong id="fProfit">R$ 0,00</strong></div>
+  <div class="stat"><small>Contas a receber</small><strong id="fPending">R$ 0,00</strong></div>
+ </div>
+ <button onclick="toggleForm('expenseForm')">＋ Nova despesa</button>
+ <form id="expenseForm" class="hidden" onsubmit="saveExpense(event)">
+  <label>Descrição</label><input id="eDesc" required placeholder="Ex.: ingredientes, embalagem">
+  <label>Categoria</label><select id="eCategory"><option>Ingredientes</option><option>Embalagens</option><option>Equipamentos</option><option>Utensílios</option><option>Marketing</option><option>Transporte</option><option>Outros</option></select>
+  <label>Valor (R$)</label><input id="eValue" type="number" min="0.01" step=".01" required>
+  <label>Data</label><input id="eDate" type="date">
+  <div class="actions"><button type="submit">Salvar despesa</button><button type="button" class="secondary" onclick="toggleForm('expenseForm')">Cancelar</button></div>
+ </form>
+ <div class="section-title" style="margin-top:20px">Despesas</div><div id="expenseList"></div>
+</section>
+<section id="products" class="hidden">
+ <div class="row"><div class="section-title">Produtos</div><button onclick="toggleForm('productForm')">＋ Novo</button></div>
+ <form id="productForm" class="hidden" onsubmit="saveProduct(event)">
+  <label>Nome</label><input id="pName" required>
+  <label>Preço de venda (R$)</label><input id="pPrice" type="number" min="0" step=".01" required>
+  <label>Custo estimado por unidade (R$)</label><input id="pCost" type="number" min="0" step=".01" value="0">
+  <div class="actions"><button type="submit">Salvar produto</button><button type="button" class="secondary" onclick="toggleForm('productForm')">Cancelar</button></div>
+ </form>
+ <div id="productList"></div>
+</section>
+<section id="customers" class="hidden"><div class="section-title">Clientes</div><div id="customerList"></div></section>
+<section id="reports" class="hidden"><div class="section-title">Relatórios</div><div id="reportContent"></div><div class="actions"><button class="secondary" onclick="exportData()">Exportar backup</button><button class="secondary" onclick="document.getElementById('importFile').click()">Importar backup</button><input id="importFile" type="file" accept="application/json" class="hidden" onchange="importData(event)"></div></section>
+</main>
+<nav class="tabs">
+<button class="active" data-tab="dashboard" onclick="show('dashboard')">⌂<br>Início</button>
+<button data-tab="orders" onclick="show('orders')">▤<br>Pedidos</button>
+<button data-tab="production" onclick="show('production')">◷<br>Produção</button>
+<button data-tab="finance" onclick="show('finance')">R$<br>Financeiro</button>
+<button data-tab="products" onclick="show('products')">◇<br>Produtos</button>
+<button data-tab="reports" onclick="show('reports')">▥<br>Mais</button>
+</nav>
+<script>
+const KEY='fyah_control_v1';
+const money=n=>(Number(n)||0).toLocaleString('pt-BR',{style:'currency',currency:'BRL'});
+const today=()=>new Date().toISOString().slice(0,10);
+let data=JSON.parse(localStorage.getItem(KEY)||'null')||{
+ products:[{id:1,name:'Ravioli Ricota + Parmesão',price:32,cost:14.8},{id:2,name:'Lasanha FYAH',price:38,cost:18},{id:3,name:'Sofiatelli',price:45,cost:21},{id:4,name:'Empanada',price:12,cost:5.5}],
+ orders:[],expenses:[]
+};
+function persist(){localStorage.setItem(KEY,JSON.stringify(data));render()}
+function show(id){document.querySelectorAll('main section').forEach(s=>s.classList.add('hidden'));document.getElementById(id).classList.remove('hidden');document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('active',b.dataset.tab===id));render()}
+function toggleForm(id){document.getElementById(id).classList.toggle('hidden')}
+function esc(s){return String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+function saveOrder(e){e.preventDefault();let p=data.products.find(x=>x.id==document.getElementById('oProduct').value);let q=+oQty.value,price=+oPrice.value;data.orders.unshift({id:Date.now(),customer:oCustomer.value,phone:oPhone.value,product:p?.name||'Produto',qty:q,price,total:q*price,date:oDate.value,payment:oPayment.value,production:oProduction.value,delivery:oDelivery.value,notes:oNotes.value});e.target.reset();oQty.value=1;toggleForm('orderForm');persist()}
+function saveExpense(e){e.preventDefault();data.expenses.unshift({id:Date.now(),desc:eDesc.value,category:eCategory.value,value:+eValue.value,date:eDate.value||today()});e.target.reset();toggleForm('expenseForm');persist()}
+function saveProduct(e){e.preventDefault();data.products.push({id:Date.now(),name:pName.value,price:+pPrice.value,cost:+pCost.value});e.target.reset();toggleForm('productForm');persist()}
+function updateOrder(id,key,value){let o=data.orders.find(x=>x.id===id);if(o){o[key]=value;persist()}}
+function delOrder(id){if(confirm('Excluir esta encomenda?')){data.orders=data.orders.filter(x=>x.id!==id);persist()}}
+function delExpense(id){if(confirm('Excluir esta despesa?')){data.expenses=data.expenses.filter(x=>x.id!==id);persist()}}
+function delProduct(id){if(confirm('Excluir este produto?')){data.products=data.products.filter(x=>x.id!==id);persist()}}
+function render(){
+ oProduct.innerHTML=data.products.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+ if(data.products.length){oPrice.value=data.products[0].price;oProduct.onchange=()=>{let p=data.products.find(x=>x.id==oProduct.value);oPrice.value=p?.price??0}}
+ const received=data.orders.filter(o=>o.payment==='Pago').reduce((a,o)=>a+o.total,0);
+ const pending=data.orders.filter(o=>o.payment!=='Pago').reduce((a,o)=>a+o.total,0);
+ const expenses=data.expenses.reduce((a,e)=>a+e.value,0);
+ const open=data.orders.filter(o=>o.delivery!=='Entregue').length;
+ sOpen.textContent=open;sReceber.textContent=money(pending);sRevenue.textContent=money(received);sProfit.textContent=money(received-expenses);
+ fRevenue.textContent=money(received);fExpenses.textContent=money(expenses);fProfit.textContent=money(received-expenses);fPending.textContent=money(pending);
+ orderList.innerHTML=data.orders.length?data.orders.map(o=>`<div class="card"><div class="row"><h3>${esc(o.customer)}</h3><span class="price">${money(o.total)}</span></div><p>${esc(o.qty)} × ${esc(o.product)} ${o.date?' • Entrega: '+esc(o.date):''}</p><p>${esc(o.phone||'Sem telefone')} ${o.notes?' • '+esc(o.notes):''}</p><hr><div class="grid">
+ <div><label>Pagamento</label><select onchange="updateOrder(${o.id},'payment',this.value)">${['Pendente','Parcial','Pago'].map(v=>`<option ${o.payment===v?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div><label>Produção</label><select onchange="updateOrder(${o.id},'production',this.value)">${['A produzir','Em produção','Pronto'].map(v=>`<option ${o.production===v?'selected':''}>${v}</option>`).join('')}</select></div>
+ <div><label>Entrega</label><select onchange="updateOrder(${o.id},'delivery',this.value)">${['Pendente','Entregue'].map(v=>`<option ${o.delivery===v?'selected':''}>${v}</option>`).join('')}</select></div>
+ </div><div class="actions"><button class="danger" onclick="delOrder(${o.id})">Excluir</button></div></div>`).join(''):'<div class="empty">Nenhuma encomenda cadastrada.</div>';
+ dashList.innerHTML=data.orders.filter(o=>o.delivery!=='Entregue').slice(0,4).map(o=>`<div class="card"><div class="row"><b>${esc(o.customer)}</b><span class="pill">${esc(o.production)}</span></div><p>${esc(o.product)} • ${money(o.total)} • ${esc(o.delivery)}</p></div>`).join('')||'<div class="empty">Tudo em dia. Cadastre sua primeira encomenda.</div>';
+ productionList.innerHTML=data.orders.filter(o=>o.production!=='Pronto'&&o.delivery!=='Entregue').map(o=>`<div class="card"><div class="row"><b>${esc(o.product)}</b><span class="pill">${esc(o.production)}</span></div><p>${esc(o.customer)} • ${o.qty} unidade(s)</p><select onchange="updateOrder(${o.id},'production',this.value)"><option>A produzir</option><option ${o.production==='Em produção'?'selected':''}>Em produção</option><option>Pronto</option></select></div>`).join('')||'<div class="empty">Nenhum item aguardando produção.</div>';
+ expenseList.innerHTML=data.expenses.map(x=>`<div class="card"><div class="row"><b>${esc(x.desc)}</b><span class="price">${money(x.value)}</span></div><p>${esc(x.category)} • ${esc(x.date)}</p><button class="danger" onclick="delExpense(${x.id})">Excluir</button></div>`).join('')||'<div class="empty">Nenhuma despesa lançada.</div>';
+ productList.innerHTML=data.products.map(p=>`<div class="card"><div class="row"><h3>${esc(p.name)}</h3><span class="price">${money(p.price)}</span></div><p>Custo estimado: ${money(p.cost)} • Margem bruta estimada: ${money(p.price-p.cost)}</p><button class="danger" onclick="delProduct(${p.id})">Excluir</button></div>`).join('')||'<div class="empty">Cadastre seus produtos.</div>';
+ let names=[...new Set(data.orders.map(o=>o.customer))];
+ customerList.innerHTML=names.map(n=>{let os=data.orders.filter(o=>o.customer===n);return `<div class="card"><h3>${esc(n)}</h3><p>${os.length} pedido(s) • Total registrado: ${money(os.reduce((a,o)=>a+o.total,0))}</p></div>`}).join('')||'<div class="empty">Os clientes aparecerão aqui após o primeiro pedido.</div>';
+ reportContent.innerHTML=`<div class="card"><p>Encomendas registradas</p><h3>${data.orders.length}</h3><p>Unidades vendidas</p><h3>${data.orders.reduce((a,o)=>a+o.qty,0)}</h3><p>Ticket médio</p><h3>${money(data.orders.length?data.orders.reduce((a,o)=>a+o.total,0)/data.orders.length:0)}</h3><p>Despesas registradas</p><h3>${money(expenses)}</h3><p>Resultado sobre pagamentos marcados como pagos menos despesas lançadas. Cadastre também custos variáveis para uma apuração mais precisa.</p></div>`;
+}
+function exportData(){let blob=new Blob([JSON.stringify(data,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='fyah-control-backup.json';a.click();URL.revokeObjectURL(a.href)}
+function importData(e){let f=e.target.files[0];if(!f)return;let r=new FileReader();r.onload=()=>{try{let d=JSON.parse(r.result);if(!d.products||!d.orders||!d.expenses)throw Error();data=d;persist();alert('Backup restaurado!')}catch(_){alert('Arquivo de backup inválido.')}};r.readAsText(f)}
+render();
+</script>
+</body></html>
